@@ -32,8 +32,8 @@ Chave do filtro: `field.field_name` (string legível direto da API Kommo), não 
 | 1 | `Objeções` | `1376300` | multiselect (16 opções) | **Input primário** — tipo da objeção (1 de 16 do mapeamento canônico). Define qual estratégia base aplicar. |
 | 2 | `Objeções (livre)` | `1376302` | text | Citação literal do cliente — fundamenta a fala de validação ("Entendi que você disse X"). Vendedor consolida nuance aqui (trecho de WhatsApp, contexto adicional, etc). |
 | 3 | `Tipo de cliente` | `848211` | enum | Define **quais 3 das 6 Estruturas Urânia ativar** (Particular → Humana/Internacional/Tecnológica; Pública → Científica/Pedagógica/Digital; etc). Sem isso, coach genérico escolhe Estrutura errada pro perfil. |
-| 4 | `Nº de alunos` | TBD (ver `DESIGN.md` §3.7) | number | Pilar do **Compromisso 3** do método (sempre diluir por aluno e 12 meses). Crítico em objeções 1 (CARO) e 12 (desconto). Sem isso, roteiro perde âncora financeira mais forte. |
-| 5 | `Contato principal.cargo` | extraído de `_embedded.contacts[0]` custom field `Cargo` (`904188`) | string | Personaliza fala ("Professor", "Diretor", "Coordenadora") em vez do "Professor(a)" genérico. |
+| 4 | `Nº de alunos` | `849729` | text (string, não number — apesar do nome) | Pilar do **Compromisso 3** do método (sempre diluir por aluno e 12 meses). Crítico em objeções 1 (CARO) e 12 (desconto). Sem isso, roteiro perde âncora financeira mais forte. |
+| 5 | `Contato principal.cargo` | `904188` (em contacts) | select (enum — Diretor, Coordenador, Professor, etc.) | Personaliza fala ("Professor", "Diretor", "Coordenadora") em vez do "Professor(a)" genérico. **Nota arquitetural:** `_embedded.contacts` do Get Lead retorna só `{id, is_main}` — o Cargo exige 2º Get Entity em `entity: contacts`. Isso é exatamente o que o ramo `IF Has Extras → Plan Fetches → Get Each Extra → Aggregate Extras` (clonado do briefing labs) já resolve. |
 
 > **Enum values:**
 > - `Objeções` (16 opções) → ver mapeamento literal em [`./mapeamento-objecoes-lead-urania.txt`](./mapeamento-objecoes-lead-urania.txt)
@@ -65,10 +65,10 @@ Excluídos da whitelist pra minimizar tokens e ruído. Listados aqui pra evitar 
 
 | Campo | Valor |
 |---|---|
-| `field_id` | `1378355` |
+| `field_id` | `1378497` |
 | Type | text |
 | Entity | lead (do `lead_id` recebido no webhook) |
-| Conteúdo | **Só o `roteiro` retornado pelo LLM** (3-5 falas numeradas, texto puro, ~50-150 palavras) |
+| Conteúdo | **`proximo_passo` retornado pelo LLM** (~10-30 palavras, ~150 chars). Mudou de "roteiro inline" pra "proximo_passo" em 2026-05-23 quando descobrimos via execution 256934 que o field aceita só **256 chars** (não os ~2000 que DESIGN.md assumiu). Roteiro completo fica só na nota (Destino 2). UX: vendedor olha o card e vê o próximo passo no field — clica na nota se quiser ler o roteiro inteiro. |
 | Comportamento | **Sobrescreve** a cada run — último roteiro vale |
 | MS usado | `[MS-KOMMO] Salvar campos em uma Entity` (`m5K7FZDDvVXDiywo`) |
 
@@ -78,9 +78,9 @@ Excluídos da whitelist pra minimizar tokens e ruído. Listados aqui pra evitar 
 |---|---|
 | `entity_type` | `leads` |
 | `entity_id` | `<lead_id>` do webhook |
-| `note_type` | `service_message` |
-| `service` (sugerido) | `Agente Contorno Objeção` (pra filtragem posterior no Kommo) |
-| Conteúdo | Nota completa com 3 seções: `ROTEIRO COPIÁVEL` + `POR QUE FUNCIONA` + `PRÓXIMO PASSO`. Headers em texto puro (sem markdown). |
+| `note_type` | **DUAL** em v0.6.2 (2026-05-23): cria **2 registros simultâneos** no Kommo a cada disparo — uma **Nota** (`note_type: common`) pro histórico permanente + uma **msg interna do bot** (`note_type: service_message`, `service: Agente Contorno Objeção`) pro fluxo de conversa. Decisão Marcos. Build Note retorna 2 items, executeWorkflow Add Note (mode each) chama o MS 2 vezes. |
+| Identificação | Prefixo `Agente Contorno Objeção` na 1ª linha do texto |
+| Conteúdo | Nota completa com 3 seções: `ROTEIRO COPIÁVEL` + `POR QUE FUNCIONA` + `PRÓXIMO PASSO`. Headers em texto puro (sem markdown). **Multiline preservado:** notas do Kommo aceitam `\n` real e renderizam com quebra de linha (confirmado 2026-05-22). O field 1378497 (texto longo, criado em substituição ao 1378355 que era curto) também aceita multiline. Logo: `roteiro` vai com `\n` natural na nota, e separador ` · ` só no field. |
 | Comportamento | **Acumula** — cada run cria 1 nota nova (histórico contextualizado) |
 | MS usado | `[MS-KOMMO] Add note` (`QYvm2okgK3bQgMbR`) |
 

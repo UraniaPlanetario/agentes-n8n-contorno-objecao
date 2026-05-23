@@ -1,6 +1,6 @@
 # CLAUDE.md — n8n-contorno-objecao-kommo
 
-Workflow n8n que recebe `lead_id` Kommo, lê 5 campos do lead via LLM (gpt-4o), gera roteiro de contorno calibrado e devolve em 2 destinos: custom field `Resp. IA objeção` (1378355) + nota no lead.
+Workflow n8n que recebe `lead_id` Kommo, lê 5 campos do lead via LLM (gpt-4o), gera roteiro de contorno calibrado e devolve em 2 destinos: custom field `Resp. IA objeção` (1378497) + nota no lead.
 
 Coach de objeção pra vendedor comercial Urânia. Dispara via **salesbot manual** no Kommo após o vendedor preencher `Objeções` + `Objeções (livre)`.
 
@@ -28,14 +28,14 @@ Coach de objeção pra vendedor comercial Urânia. Dispara via **salesbot manual
 
 | Campo | Valor |
 |---|---|
-| **ID** | TBD (criar via `mcp__n8n__n8n_create_workflow`) |
-| **Nome sugerido** | `[KOMMO] Agente Contorno Objeção` |
+| **ID** | `AhnbRqc4wKX7UyHB` (criado 2026-05-22 via MCP, **ATIVO desde 2026-05-23** — aguardando salesbot Kommo) |
+| **Nome** | `[KOMMO] Agente Contorno Objeção` |
 | **Webhook path** | `/contorno-objecao-kommo` (POST) |
 | **URL produção** | `https://n8n-queue-mode-n8n-web.mmjkgs.easypanel.host/webhook/contorno-objecao-kommo` |
 | **responseMode** | `onReceived` (fire-and-forget — Kommo timeouta em 2s) |
 | **Body esperado** | `{ "lead_id": <number> }` ou payload nativo Kommo `leads[add\|update\|status][0][id]` |
 | **Modelo IA** | gpt-4o (temp 0.4, max_tokens ~1500-2000, JSON mode) |
-| **Credencial OpenAI** | `OpenAi ([N8N-Q] Agentes SDR)` (compartilhada — briefing + qualifier + este) |
+| **Credencial OpenAI** | `OpenAi ([N8N-Q] Agentes Geral)` (compartilhada — briefing + qualifier + este) |
 | **Error workflow** | `HQGrY3cUDvQJLGMZ` |
 | **Onde mora o prompt** | Node Set `System Prompt`, campo `systemPrompt` — editável direto na UI do n8n |
 
@@ -48,7 +48,7 @@ Webhook (onReceived) → System Prompt (Set, editável UI) → Validate Input
   → Get Lead [MS pSUCb5GTYWc4B99I] → IF Has Extras → Plan/Get/Aggregate ou Empty
   → Format Payload (lê $('System Prompt') + injeta DATA ATUAL) → OpenAI Chat (JSON mode)
   → Parse Output (separa roteiro vs nota completa) →
-       ├─→ Save Field [MS m5K7FZDDvVXDiywo] (field 1378355 ← roteiro)
+       ├─→ Save Field [MS m5K7FZDDvVXDiywo] (field 1378497 ← roteiro)
        └─→ Build Note → Add Note [MS QYvm2okgK3bQgMbR] (nota ← 3 seções)
 ```
 
@@ -61,7 +61,7 @@ Detalhes técnicos exatos (pipeline node a node, contrato JSON do LLM, pseudocó
 | MS | n8n ID | Função neste agente |
 |---|---|---|
 | `[MS-KOMMO] Get Entity` | `pSUCb5GTYWc4B99I` | GET lead + contatos por ID |
-| `[MS-KOMMO] Salvar campos em uma Entity` | `m5K7FZDDvVXDiywo` | Atualiza field 1378355 com o roteiro |
+| `[MS-KOMMO] Salvar campos em uma Entity` | `m5K7FZDDvVXDiywo` | Atualiza field 1378497 com o roteiro |
 | `[MS-KOMMO] Add note` | `QYvm2okgK3bQgMbR` | Cria nota com 3 seções |
 
 Padrão de chamada via `executeWorkflow` (`mode='each'`, `waitForSubWorkflow=true`). Detalhes I/O por MS → [`_refs/n8n-ms-kommo/ms/`](./_refs/n8n-ms-kommo/ms/) · monorepo: `../n8n-ms-kommo/ms/`.
@@ -73,7 +73,7 @@ Padrão de chamada via `executeWorkflow` (`mode='each'`, `waitForSubWorkflow=tru
 **Input:** 5 campos lidos do lead. Whitelist e justificativa completa em [`FIELDS.md`](./FIELDS.md).
 
 **Output em 2 destinos:**
-- Custom field **`Resp. IA objeção`** (`field_id: 1378355`, text) ← **só o ROTEIRO COPIÁVEL** (sobrescreve a cada run)
+- Custom field **`Resp. IA objeção`** (`field_id: 1378497`, text) ← **só o ROTEIRO COPIÁVEL** (sobrescreve a cada run)
 - **Nota no lead** (`note_type=service_message`) ← 3 seções: `ROTEIRO COPIÁVEL` + `POR QUE FUNCIONA` + `PRÓXIMO PASSO` (acumula — cada run = 1 nota nova)
 
 ---

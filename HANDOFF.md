@@ -67,10 +67,10 @@ Estimativa: 2-3h pra absorver tudo. Não pule.
 
 Detalhe em README seção "Roteiro sugerido de implementação". Resumo:
 
-1. **Setup** — leituras + resolver pendências `DESIGN.md` §3.7 (field_id de `Nº de alunos`, suporte a `\n` no field 1378355).
+1. **Setup** — leituras + resolver pendências `DESIGN.md` §3.7 (field_id de `Nº de alunos`, suporte a `\n` no field 1378497).
 2. **Esqueleto E (Extract)** — só a parte que lê o lead. Testa antes de seguir.
 3. **Transform + LLM** — whitelist 5 campos + JSON mode. Escreve `SYSTEM_PROMPT.md` v0.1.
-4. **Load (saída dupla)** — `Save Field` (1378355) + `Add Note`. Testa em lead real.
+4. **Load (saída dupla)** — `Save Field` (1378497) + `Add Note`. Testa em lead real.
 5. **Calibração** — 5-10 leads, sample manual, itera v0.1 → v0.N.
 
 Cada etapa termina com **checkpoint de teste** (`mcp__n8n__n8n_test_workflow` + olhar Executions). Não pule os checkpoints.

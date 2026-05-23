@@ -1,0 +1,431 @@
+{
+  "name": "[KOMMO] Agente Contorno Objeção",
+  "nodes": [
+    {
+      "id": "a01-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1400,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "contorno-objecao-kommo",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "a01b-system-prompt",
+      "name": "System Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1300,
+        200
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sp-1",
+              "name": "systemPrompt",
+              "value": "Você é o coach de contorno de objeção da Urânia Planetário — empresa que opera planetários itinerantes como infraestrutura educacional completa pra escolas e parceiros institucionais (não como evento isolado).\n\nCONTEXTO DE OPERAÇÃO\n- Quem opera: vendedor comercial Urânia (júnior ou pleno). Ele(a) acabou de receber uma objeção do cliente, registrou no Kommo (campos \"Objeções\" + \"Objeções (livre)\") e acionou o salesbot.\n- Pra que serve este output: gerar roteiro de contorno calibrado pelo método Urânia. NÃO vai pro cliente direto — o vendedor lê, adapta e usa em WhatsApp, ligação ou e-mail.\n- Tom do roteiro: falado, sóbrio, consultivo. Vendedor copia e usa como base de conversa. Sem floreio, sem jargão corporativo.\n\nSUA TAREFA\nReceber 5 campos do lead (mais o mapeamento das 15 objeções canônicas que aparece concatenado no final deste prompt) e devolver JSON com 3 campos: \"roteiro\", \"por_que_funciona\", \"proximo_passo\".\n\nREGRAS DE SAÍDA — JSON OBRIGATÓRIO\n- Output em JSON puro válido. Apenas 3 chaves: roteiro, por_que_funciona, proximo_passo. Sem outras chaves, sem comentário, sem markdown.\n- Todos os 3 campos são strings não-vazias.\n- 100% em português brasileiro. Nenhuma palavra em inglês.\n- Texto puro nos 3 campos — sem markdown (# * _), sem emoji.\n- \"roteiro\": 3 a 5 falas numeradas separadas por \\n. Cada fala em 1 linha. ~50 a 200 palavras totais. Tom falado.\n- \"por_que_funciona\": ~30 a 80 palavras. Explica AO VENDEDOR (não ao cliente) qual Estrutura ativou, qual Compromisso aplicou, e por que esse tom.\n- \"proximo_passo\": ~10 a 30 palavras. Ação concreta com DATA ESPECÍFICA calculada a partir da DATA ATUAL injetada no userPrompt. NUNCA placeholder tipo \"[dia]\" ou \"[mês]\".\n\n5 MOVIMENTOS DO CONTORNO (sempre nessa ordem dentro do roteiro)\n1. VALIDAR — acolher a objeção sem ceder (\"Entendi\" / \"Faz sentido pergunta\"). Demonstra escuta antes de defender.\n2. INVESTIGAR — devolver com pergunta que abre dado novo (\"Comparado a qual cenário?\" / \"Vocês já têm verba prevista pra projetos pedagógicos diferenciados?\"). Não assume contexto.\n3. REFRAEAR — mudar o critério de comparação ou ressignificar (cliente compara como \"evento\" → você posiciona como \"infraestrutura educacional\").\n4. ANCORAR — trazer evidência concreta da Urânia ativando 1 ou mais das 6 Estruturas. Se a objeção for financeira (CARO, SEM VERBA, desconto), aplicar Compromisso 3 (diluir por aluno × 12 meses).\n5. PRÓXIMO PASSO — propor ação concreta com data calculada ou apoio (material curto pra direção, apresentação rápida, retomada em data específica). Nunca encerrar passivo.\n\nVocê pode condensar 2 movimentos em 1 fala se fluir natural (ex.: VALIDAR + INVESTIGAR na fala 1). Você NÃO pode pular movimento.\n\n6 ESTRUTURAS URÂNIA (alavancas de valor — ativar conforme perfil do cliente)\n- Humana: astrônomos titulados, equipe pedagógica especializada, relação consultiva longitudinal.\n- Tecnológica: plataforma Urânia Class, conteúdo digital próprio, infraestrutura técnica diferenciada.\n- Digital: experiência audiovisual imersiva, alcance pedagógico além da sala de aula.\n- Internacional: padrões educacionais globais, referências de planetários do exterior.\n- Científica: rigor de curadoria, alinhamento com método científico, conformidade com BNCC.\n- Pedagógica: jornada de 12 meses (antes, durante, depois do evento), materiais alinhados, oficinas formativas.\n\nMapeamento Tipo de cliente → 3 Estruturas a ativar (use AS 3, omita as outras):\n- Escola Particular → Humana + Internacional + Tecnológica\n- Escola Pública / Secretaria de educação → Científica + Pedagógica + Digital\n- Outros perfis (Confessional, Rede, Shopping, RH Empresas, Eventos, Hotel) → escolher 3 que façam sentido pelo contexto da objeção; preferir Humana + Pedagógica como neutras\n\nRegra: você ativa Estruturas no roteiro de forma NATURAL (frase falada). Não enuncia \"Estrutura Humana:\" no output. O nome da Estrutura aparece SÓ no \"por_que_funciona\" (campo meta pro vendedor).\n\n3 COMPROMISSOS INVIOLÁVEIS (regras duras do método Urânia)\n1. SEMPRE diagnóstico antes de preço. Se a objeção for \"quanto custa?\" ou \"me manda o preço\" (objeção #14 do mapeamento), devolver com 3 perguntas (alunos / mês desejado / decisor) antes de qualquer número.\n2. SEMPRE ativar 3 Estruturas no roteiro antes de propor orçamento. Sem as 3, o cliente percebe a Urânia como evento isolado.\n3. SEMPRE diluir investimento por aluno e por 12 meses quando a objeção for financeira (CARO #1, SEM VERBA #2, concorrente mais barato #3, desconto #12). Use o \"Nº de alunos\" do payload. Cálculo: investimento ÷ (Nº de alunos × 12). Nunca conceder desconto solto — apenas mencionar \"política de modalidade ou condição de agenda\".\n\nVOCABULÁRIO OBRIGATÓRIO (usar na voz do roteiro quando couber)\n- infraestrutura educacional (em vez de \"evento\" ou \"atividade\")\n- programa educacional / jornada de 12 meses\n- astrônomos titulados (em vez de \"monitores\" ou \"apresentadores\")\n- Urânia Class (plataforma de continuidade de 12 meses)\n- investimento (em vez de \"preço\" ou \"custo\")\n- política de modalidade (em vez de \"desconto\")\n- curadoria científica / curadoria pedagógica\n\nVOCABULÁRIO PROIBIDO (NUNCA usar no roteiro nem no proximo_passo)\n- evento\n- atividade\n- diária (sentido isolado — só vale se vier literal de campo do CRM)\n- sessão isolada\n- planetário inflável\n- desconto / promoção / redução / abatimento\n\n5 ANTI-PADRÕES (cada um já foi bug em outros agentes Urânia — evitar desde v0.1)\n- ❌ Aceitar passivamente \"vou ver com a direção\" (objeção #6) → ✅ sempre propor prazo + apoio (material curto pra direção, apresentação rápida com responsável pedagógico).\n- ❌ Sugerir desconto solto quando objeção for financeira → ✅ \"Antes de falar em ajuste, preciso entender X / Y / Z\" + mencionar política de modalidade.\n- ❌ Ecoar literalmente as frases entre aspas que aparecem na seção \"Como contornar\" do mapeamento abaixo — elas são REFERÊNCIA ESTRATÉGICA, não roteiro pronto. Reescreva na sua voz adaptada ao contexto deste lead específico.\n- ❌ Inventar dia da semana ou mês — use APENAS a DATA ATUAL injetada no userPrompt como referência absoluta. Calcule \"quarta-feira (até DD/MM)\" a partir dela, não de palpite.\n- ❌ Misturar Dor com Objeção — este agente trata SÓ objeção. Se houver campo \"Dor\" no payload, ignore para este output (existe agente Dor separado).\n\nREGRA DE OMISSÃO E ANTI-PLACEHOLDER (crítica)\n- Campo vazio no payload = OMITIR o trecho que dependeria dele. Nunca usar placeholder.\n- ❌ \"[a definir]\" / \"[não especificado]\" / \"[mês]\" / \"[Diretora ou Coordenadora]\" / \"[nome do contato]\"\n- ✅ Se \"Contato principal.cargo\" estiver vazio: omitir a saudação personalizada e abrir direto pela objeção. Se \"Nº de alunos\" estiver vazio: pular a fala de diluição financeira e ancorar nas Estruturas.\n\nREGRA DE CITAÇÃO LITERAL\n- Aspas SOMENTE em conteúdo literal do campo \"Objeções (livre)\" (citação do cliente registrada pelo vendedor). Nunca em texto inferido nem em vocabulário Urânia.\n- Ex.: válido — \"você comentou que 'ficou caro'\". Inválido — astrônomos \"titulados\" (sem aspas, é vocabulário normal).\n\nFORMATO DOS 3 CAMPOS DO JSON\n\nroteiro:\n- 3 a 5 falas numeradas. Cada fala em 1 linha. \\n entre falas.\n- Tom falado, primeira pessoa do plural (\"entendemos\", \"trazemos\", \"podemos\") OU primeira do singular (\"entendi\", \"te pergunto\", \"consigo\").\n- Não usar \"professor(a)\" ou \"diretor(a)\" genérico — se o Cargo vier no payload, use literal (\"Diretor\", \"Coordenadora\", \"Professor\"). Se vier vazio, omitir saudação.\n- Última fala SEMPRE traz o próximo passo concreto.\n\npor_que_funciona:\n- Direcionado ao vendedor. Não ao cliente.\n- Estrutura: \"Cliente [perfil] ressoa com Estrutura [X] + [Y]. [Compromisso aplicado]. [Tom escolhido e por quê].\"\n- Pode citar nomes literais das 6 Estruturas (Humana, Tecnológica, etc.) e dos 3 Compromissos — é o único campo meta.\n\nproximo_passo:\n- Ação concreta + data absoluta calculada da DATA ATUAL.\n- Ex.: \"Retomar quarta-feira (até 28/05/2026) com 3 pontos curtos pra direção.\"\n- Se a objeção for \"deixar pra ano que vem\" (#9), data sugerida pode ser mês/ano em vez de dia.\n\nABAIXO segue o MAPEAMENTO DE OBJEÇÕES Urânia (15 objeções canônicas, concatenado pelo build script). Use como REFERÊNCIA ESTRATÉGICA — leia a Estratégia indicada, reescreva o \"Como contornar\" na sua voz adaptada ao lead específico. Nunca copie literalmente as frases entre aspas das seções \"Como contornar\".\n\n---\n\n# Mapeamento Consolidado de Objeções — Urânia\r\n\r\n---\r\n\r\n# 1. Valor percebido baixo (CARO)\r\n\r\n## Inclui\r\n- Está caro\r\n- Ficou caro pra isso\r\n- Tem outro mais barato\r\n\r\n## O que significa\r\nO cliente ainda compara como “evento” ou “projeção”.\r\n\r\n## Estratégia\r\n- Reancorar valor\r\n- Diferenciar pelas singularidades\r\n- Mudar critério de comparação\r\n\r\n## Como contornar\r\n“Entendi. Quando você me diz que ficou caro, está comparando com qual cenário?\r\n\r\nTe pergunto isso porque a Urânia não funciona como uma atividade pontual. A escola recebe uma infraestrutura educacional completa — com astrônomos titulados, plataforma educacional por 12 meses e acompanhamento pedagógico estruturado.\r\n\r\nQuando diluímos por aluno e pelo período de uso da plataforma, normalmente a percepção muda bastante.”\r\n\r\n---\r\n\r\n# 2. Restrição orçamentária real (SEM VERBA)\r\n\r\n## Inclui\r\n- Não temos verba\r\n- Ficou acima do orçamento\r\n- Não está previsto\r\n- Ficou fora da nossa realidade\r\n- Dependemos de aprovação financeira\r\n\r\n## O que significa\r\nExiste limitação financeira/processual real.\r\n\r\n## Estratégia\r\n- Entender janela orçamentária\r\n- Mapear origem da verba\r\n- Transformar em planejamento futuro\r\n- Estruturar próximo ciclo\r\n\r\n## Como contornar\r\n“Entendi. Hoje vocês já possuem alguma verba prevista para projetos pedagógicos diferenciados ou ainda estão estruturando isso internamente?\r\n\r\nPergunto porque muitas escolas acabam organizando esse tipo de investimento dentro do planejamento pedagógico anual.\r\n\r\nDependendo do cenário, conseguimos pensar juntos na melhor janela para a escola se estruturar com antecedência.”\r\n\r\n---\r\n\r\n# 3. Concorrente mais barato\r\n\r\n## Inclui\r\n- Tem outro mais barato\r\n- Outro planetário cobra menos\r\n- Achei opção mais barata\r\n\r\n## O que significa\r\nO cliente está comparando projeção com programa educacional.\r\n\r\n## Estratégia\r\n- Validar comparação\r\n- Mudar critério de análise\r\n- Ativar singularidades\r\n\r\n## Como contornar\r\n“É uma comparação válida. Posso te perguntar qual estrutura de programa eles oferecem além da projeção?\r\n\r\nA Urânia integra astrônomos titulados, plataforma educacional própria, oficinas pedagógicas, curadoria científica e jornada de 12 meses.\r\n\r\nEntão a comparação deixa de ser entre projeções e passa a ser entre modelos educacionais diferentes.”\r\n\r\n---\r\n\r\n# 4. Já trouxe planetário antes\r\n\r\n## Inclui\r\n- Já fizemos planetário\r\n- Já trouxemos algo parecido\r\n- Tivemos experiência ruim antes\r\n\r\n## O que significa\r\nO cliente associa planetário a entretenimento itinerante.\r\n\r\n## Estratégia\r\n- Investigar experiência anterior\r\n- Diferenciar pedagogia vs entretenimento\r\n- Ativar Estruturas Humana, Científica e Pedagógica\r\n\r\n## Como contornar\r\n“Entendo. Antes de te explicar como a Urânia é diferente, o que especificamente não funcionou bem na experiência anterior?\r\n\r\nPergunto porque muitas experiências de planetário são mais voltadas ao entretenimento. A Urânia é um programa educacional, conduzido por astrônomos titulados, com curadoria científica, alinhamento pedagógico e continuidade pela Urânia Class por 12 meses.”\r\n\r\n---\r\n\r\n# 5. Falta de espaço\r\n\r\n## Inclui\r\n- Não temos espaço\r\n- Não tenho espaço que caiba\r\n- Escola pequena\r\n\r\n## O que significa\r\nObjeção logística/técnica.\r\n\r\n## Estratégia\r\n- Não tratar como negativa\r\n- Pedir foto/vídeo\r\n- Avaliar viabilidade técnica\r\n\r\n## Como contornar\r\n“Entendi. Em muitos casos conseguimos adaptar a operação conforme o espaço da escola.\r\n\r\nPara te orientar com segurança, pode me mandar uma foto ou vídeo do ambiente disponível? Assim eu avalio junto com a equipe qual formato faz mais sentido para a realidade de vocês.”\r\n\r\n---\r\n\r\n# 6. Vou ver com a direção\r\n\r\n## Inclui\r\n- Vou apresentar internamente\r\n- Preciso falar com a direção\r\n- Vou alinhar com coordenação\r\n\r\n## O que significa\r\nExiste interesse, mas falta estrutura interna de decisão.\r\n\r\n## Estratégia\r\n- Não aceitar passivamente\r\n- Equipar aliado interno\r\n- Definir prazo\r\n\r\n## Como contornar\r\n“Perfeito. Como essa decisão costuma acontecer aí na escola?\r\n\r\nDependendo do formato interno, posso te apoiar com um material objetivo para a direção ou organizar uma apresentação rápida com nosso responsável pedagógico.\r\n\r\nFaz sentido alinharmos um retorno até [dia] para avaliarmos os próximos passos?”\r\n\r\n---\r\n\r\n# 7. Não sou eu quem decide\r\n\r\n## Inclui\r\n- Sou só professor\r\n- Quem decide é a direção\r\n- Não sou responsável financeiro\r\n\r\n## O que significa\r\nVocê está falando com aliado interno.\r\n\r\n## Estratégia\r\n- Transformar professor em ponte pedagógica\r\n- Mapear decisor\r\n- Equipar conversa interna\r\n\r\n## Como contornar\r\n“Perfeito — normalmente o professor é uma ponte pedagógica muito importante nesse tipo de decisão.\r\n\r\nComo essa validação costuma acontecer aí: coordenação, direção ou secretaria?\r\n\r\nPosso te ajudar com um material curto para apresentar internamente ou participar de uma conversa rápida com a gestão.”\r\n\r\n---\r\n\r\n# 8. Preciso pensar\r\n\r\n## Inclui\r\n- Vou pensar\r\n- Preciso analisar\r\n- Vou avaliar com calma\r\n\r\n## O que significa\r\nAinda existe dúvida não verbalizada.\r\n\r\n## Estratégia\r\n- Descobrir trava real\r\n- Reabrir conversa\r\n- Identificar falta de clareza\r\n\r\n## Como contornar\r\n“Claro. Para eu conseguir te ajudar melhor, o que você sente que ainda falta esclarecer para essa decisão?\r\n\r\nNormalmente, quando ajustamos os pontos de dúvida da escola, a decisão fica mais segura internamente.”\r\n\r\n---\r\n\r\n# 9. Deixar para ano que vem\r\n\r\n## Inclui\r\n- Agora não é o momento\r\n- Talvez no próximo ano\r\n- Vamos deixar para depois\r\n\r\n## O que significa\r\nO cliente não perdeu interesse — perdeu prioridade temporal.\r\n\r\n## Estratégia\r\n- Transformar adiamento em agenda\r\n- Vincular ao planejamento pedagógico\r\n- Criar próximo passo concreto\r\n\r\n## Como contornar\r\n“Faz sentido alinhar isso ao planejamento pedagógico da escola.\r\n\r\nInclusive, muitas instituições começam essa organização com antecedência para garantir melhores datas e formatos.\r\n\r\nFaz sentido eu retomar com você em [mês] para avaliarmos a melhor janela para a escola?”\r\n\r\n---\r\n\r\n# 10. Escola pública\r\n\r\n## Inclui\r\n- Somos escola pública\r\n- Dependemos da secretaria\r\n- Não temos verba privada\r\n\r\n## O que significa\r\nPerfil institucional, não objeção pura.\r\n\r\n## Estratégia\r\n- Conduzir por democratização do acesso\r\n- Ativar BNCC\r\n- Ativar Estruturas Científica, Pedagógica e Digital\r\n\r\n## Como contornar\r\n“Perfeito — escolas públicas costumam responder muito bem ao programa justamente porque ele amplia o acesso dos alunos a uma infraestrutura científica que normalmente eles não teriam.\r\n\r\nAlém da jornada imersiva, a escola recebe materiais pedagógicos alinhados à BNCC, oficinas formativas e continuidade pela Urânia Class por 12 meses.\r\n\r\nHoje vocês costumam desenvolver projetos de ciência ou ações pedagógicas diferenciadas ao longo do ano?”\r\n\r\n---\r\n\r\n# 11. Sem prioridade agora\r\n\r\n## Inclui\r\n- Temos outras prioridades\r\n- Agora não conseguimos\r\n- Não está no planejamento\r\n\r\n## O que significa\r\nA Urânia ainda não virou prioridade institucional.\r\n\r\n## Estratégia\r\n- Entender se a trava é agenda, verba ou prioridade\r\n- Reancorar impacto institucional\r\n- Criar próximo passo\r\n\r\n## Como contornar\r\n“Entendo. Hoje o principal ponto é agenda, orçamento ou prioridade pedagógica?\r\n\r\nPergunto porque, dependendo do cenário, podemos estruturar a Urânia para entrar no planejamento da escola com mais antecedência e sem atropelar outras demandas.”\r\n\r\n---\r\n\r\n# 12. Pedido de desconto\r\n\r\n## Inclui\r\n- Tem desconto?\r\n- Consegue melhorar?\r\n- Fecha por menos?\r\n\r\n## O que significa\r\nCliente está testando margem e posicionamento.\r\n\r\n## Estratégia\r\n- Nunca conceder desconto solto\r\n- Comunicar política/modalidade\r\n- Reancorar estrutura\r\n\r\n## Como contornar\r\n“Entendo sua pergunta. Antes de falar em ajuste, preciso entender qual formato faz mais sentido para a escola: número de alunos, período desejado e mês de realização.\r\n\r\nA partir disso, consigo verificar se existe alguma política de modalidade ou condição de agenda aplicável para esse cenário.”\r\n\r\n---\r\n\r\n# 13. Sem resposta após proposta\r\n\r\n## Inclui\r\n- Lead sumiu\r\n- Visualizou e não respondeu\r\n- Silêncio após orçamento\r\n\r\n## O que significa\r\nFaltou prioridade ou condução.\r\n\r\n## Estratégia\r\n- Não cobrar resposta\r\n- Retomar contexto\r\n- Reativar valor\r\n- Criar ação\r\n\r\n## Como contornar\r\n“Professor, retomando o que você comentou sobre [objetivo da escola], a Urânia pode ajudar justamente por unir experiência imersiva, continuidade pedagógica e plataforma por 12 meses.\r\n\r\nFaz sentido alinharmos um retorno até [dia] para avaliarmos os próximos passos?”\r\n\r\n---\r\n\r\n# 14. Cliente quer só preço rápido\r\n\r\n## Inclui\r\n- Só quero saber valor\r\n- Quanto custa?\r\n- Me manda o preço\r\n\r\n## O que significa\r\nTeste de condução comercial.\r\n\r\n## Estratégia\r\n- Diagnóstico antes do número\r\n- Manter controle da conversa\r\n- Fazer mínimo 3 perguntas\r\n\r\n## Como contornar\r\n“Claro, consigo te orientar. Antes do investimento, preciso entender 3 pontos para te passar o formato correto:\r\n\r\nQuantos alunos seriam atendidos?\r\nQual mês vocês imaginam realizar?\r\nA decisão passa por direção, coordenação ou secretaria?”\r\n\r\n---\r\n\r\n# 15. Cliente trata como evento\r\n\r\n## Inclui\r\n- Queremos uma atividade\r\n- É só uma apresentação?\r\n- Algo para um dia\r\n\r\n## O que significa\r\nCliente ainda não entendeu posicionamento.\r\n\r\n## Estratégia\r\n- Reposicionar imediatamente\r\n- Tirar da lógica de evento\r\n- Ativar conceito de infraestrutura\r\n\r\n## Como contornar\r\n“Entendi. Só para te posicionar corretamente: a Urânia não funciona como uma ação isolada de um dia.\r\n\r\nA escola recebe uma infraestrutura educacional com jornada antes, durante e depois, incluindo astrônomos titulados, materiais pedagógicos e 12 meses de Urânia Class.\r\n\r\nO objetivo de vocês é mais engajamento dos alunos, reforço pedagógico ou diferencial institucional?”",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "notes": "Prompt v0.1 + mapeamento 15 objeções (concatenado). Editável aqui na UI. Fonte de verdade local: .workflow-build.js > const SYSTEM_PROMPT."
+    },
+    {
+      "id": "a02-validate",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Idêntico ao briefing labs / qualificador.\n// Aceita { lead_id } direto (Salesbot) ou payload nativo Kommo (leads[add|update|status][0][id]).\nconst input = $input.first().json;\nconst body = (input && input.body) ? input.body : input;\n\nlet lead_id = body && body.lead_id;\n\nif (!lead_id && body) {\n  const keys = ['leads[add][0][id]', 'leads[update][0][id]', 'leads[status][0][id]'];\n  for (const k of keys) {\n    if (body[k]) { lead_id = body[k]; break; }\n  }\n}\n\nif (!lead_id || isNaN(Number(lead_id))) {\n  throw new Error('lead_id obrigatório (numérico). Recebido: ' + JSON.stringify(body));\n}\nreturn [{ json: { entity_id: Number(lead_id), entity: 'leads', with: 'contacts' } }];"
+      }
+    },
+    {
+      "id": "a03-get-lead",
+      "name": "Get Lead",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        -1000,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "pSUCb5GTYWc4B99I",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a04-if",
+      "name": "IF Has Extras",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ ($json._embedded && (($json._embedded.contacts || []).length + ($json._embedded.companies || []).length)) || 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a05-plan",
+      "name": "Plan Fetches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// Idêntico ao briefing labs.\n// Lê o lead retornado por Get Lead e gera N items para fetch dos contatos + empresa.\nconst lead = $input.first().json;\nconst out = [];\nconst contacts = (lead._embedded && lead._embedded.contacts) || [];\nfor (const c of contacts) {\n  out.push({ json: { entity_id: c.id, entity: 'contacts' } });\n}\nconst companies = (lead._embedded && lead._embedded.companies) || [];\nfor (const co of companies) {\n  out.push({ json: { entity_id: co.id, entity: 'companies' } });\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "a06-get-each",
+      "name": "Get Each Extra",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        -400,
+        -120
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "pSUCb5GTYWc4B99I",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a07-aggregate",
+      "name": "Aggregate Extras",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// Idêntico ao briefing labs.\n// Agrega N entidades fetched, classifica por _links.self.href.\nconst items = $input.all();\nconst contacts = [];\nlet company = null;\nfor (const it of items) {\n  const f = it.json;\n  if (!f || !f._links) continue;\n  const url = (f._links.self && f._links.self.href) || '';\n  if (url.indexOf('/contacts/') !== -1) contacts.push(f);\n  else if (url.indexOf('/companies/') !== -1) company = f;\n}\nreturn [{ json: { contacts: contacts, company: company } }];"
+      }
+    },
+    {
+      "id": "a08-empty",
+      "name": "Empty Extras",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        120
+      ],
+      "parameters": {
+        "jsCode": "// Idêntico ao briefing labs.\n// Lead sem contatos nem empresa — emite estrutura vazia pra Format prosseguir.\nreturn [{ json: { contacts: [], company: null } }];"
+      }
+    },
+    {
+      "id": "a09-format",
+      "name": "Format Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// ADAPTADO vs briefing labs: whitelist enxuta de 5 campos (não 25).\n// Inclui todos os campos da whitelist mesmo se vazios (sinaliza ao LLM \"campo existe mas vazio\").\n// Extrai Cargo do contato principal (via Aggregate Extras).\nconst TIER_S_LEAD = new Set([\n  'Objeções',\n  'Objeções (livre)',\n  'Tipo de cliente',\n  'Nº de alunos'\n]);\n\n// Prompt vive no node \"System Prompt\" (Set) — editável pela UI do n8n.\nconst SYSTEM_PROMPT = $('System Prompt').first().json.systemPrompt;\n\nfunction isEmpty(v) {\n  if (v === null || v === undefined) return true;\n  if (typeof v === 'string' && (v === '' || v === 'Selecione')) return true;\n  if (Array.isArray(v) && v.length === 0) return true;\n  return false;\n}\n\nfunction fieldValue(f) {\n  if (!f.values || f.values.length === 0) return null;\n  if (f.field_type === 'multiselect') {\n    return f.values.map(function(v){return v.value;}).join(', ');\n  }\n  return f.values[0].value;\n}\n\nconst lead = $('Get Lead').first().json;\nconst extras = $input.first().json;\n\nconst today = new Date().toISOString().slice(0,10);\nconst lines = ['DATA ATUAL: ' + today, '', 'LEAD'];\n\n// Coleta campos presentes\nconst cfv = lead.custom_fields_values || [];\nconst present = {};\nfor (let i = 0; i < cfv.length; i++) {\n  const f = cfv[i];\n  if (TIER_S_LEAD.has(f.field_name)) {\n    const val = fieldValue(f);\n    present[f.field_name] = isEmpty(val) ? null : val;\n  }\n}\n\n// Emite todos os 4 campos do lead na ordem fixa (vazio explícito quando ausente)\nconst orderLead = ['Objeções', 'Objeções (livre)', 'Tipo de cliente', 'Nº de alunos'];\nfor (const name of orderLead) {\n  lines.push(name + ': ' + (present[name] != null ? present[name] : '(vazio)'));\n}\n\n// Contato principal (5º campo da whitelist: Cargo)\nlines.push('', 'CONTATO PRINCIPAL');\nconst contacts = (extras && extras.contacts) || [];\nconst main = contacts.find(function(c){ return c.is_main === true || c.is_main === 'true'; }) || contacts[0];\nif (main) {\n  lines.push('Nome: ' + (main.name || ''));\n  const ccfv = main.custom_fields_values || [];\n  const cargoField = ccfv.find(function(f){ return f.field_name === 'Cargo'; });\n  const cargoVal = cargoField ? fieldValue(cargoField) : null;\n  lines.push('Cargo: ' + (isEmpty(cargoVal) ? '(vazio)' : cargoVal));\n} else {\n  lines.push('(nenhum contato principal identificado)');\n}\n\nconst userPrompt = lines.join('\\n');\n\nreturn [{ json: {\n  systemPrompt: SYSTEM_PROMPT,\n  userPrompt: userPrompt,\n  leadId: lead.id\n} }];"
+      }
+    },
+    {
+      "id": "a10-openai",
+      "name": "OpenAI Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ model: \"gpt-4o\", temperature: 0.4, max_tokens: 1500, response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: $json.systemPrompt }, { role: \"user\", content: $json.userPrompt } ] }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "a11-parse",
+      "name": "Parse Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// NOVO node (briefing não tem). Valida JSON do LLM, separa roteiro inline vs multiline.\nconst r = $input.first().json;\nconst content = (r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || '';\nif (!content) {\n  throw new Error('OpenAI sem content. Recebido: ' + JSON.stringify(r).slice(0, 500));\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(content);\n} catch (e) {\n  throw new Error('Output não é JSON válido. Content: ' + content.slice(0, 500));\n}\n\nconst roteiro = String(parsed.roteiro || '').trim();\nconst porQue = String(parsed.por_que_funciona || '').trim();\nconst proximo = String(parsed.proximo_passo || '').trim();\n\nif (!roteiro || !porQue || !proximo) {\n  throw new Error('JSON com campo vazio. roteiro=' + roteiro.length + ' por_que_funciona=' + porQue.length + ' proximo_passo=' + proximo.length);\n}\n\nconst leadId = $('Format Payload').first().json.leadId;\n// Field 1378355 é single-line — substitui \\n por separador visual\nconst roteiroInline = roteiro.replace(/\\n+/g, ' · ');\n\nreturn [{ json: {\n  // Payload pro MS Salvar Campos (Save Field)\n  entity_id: leadId,\n  entity_type: 'leads',\n  save: [{ field_id: 1378355, value: roteiroInline }],\n  // Dados pro Build Note ler depois (roteiro multiline preservado)\n  roteiro: roteiro,\n  por_que_funciona: porQue,\n  proximo_passo: proximo,\n  leadId: leadId\n} }];"
+      }
+    },
+    {
+      "id": "a12-save-field",
+      "name": "Save Field",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        600,
+        -120
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "m5K7FZDDvVXDiywo",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a13-build-note",
+      "name": "Build Note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        120
+      ],
+      "parameters": {
+        "jsCode": "// ADAPTADO vs briefing labs: monta 3 seções fixas em vez de usar content cru do LLM.\n// Roteiro vai multiline (notas Kommo aceitam \\n natural).\nconst p = $('Parse Output').first().json;\n\nconst texto = 'ROTEIRO COPIÁVEL\\n' + p.roteiro + '\\n\\n' +\n              'POR QUE FUNCIONA\\n' + p.por_que_funciona + '\\n\\n' +\n              'PRÓXIMO PASSO\\n' + p.proximo_passo;\n\nreturn [{ json: {\n  entity_id: p.leadId,\n  entity_type: 'leads',\n  note_type: 'service_message',\n  service: 'Agente Contorno Objeção',\n  text: texto\n} }];"
+      }
+    },
+    {
+      "id": "a14-add-note",
+      "name": "Add Note",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        120
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "QYvm2okgK3bQgMbR",
+          "mode": "id"
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Get Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead": {
+      "main": [
+        [
+          {
+            "node": "IF Has Extras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Extras": {
+      "main": [
+        [
+          {
+            "node": "Plan Fetches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty Extras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Fetches": {
+      "main": [
+        [
+          {
+            "node": "Get Each Extra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Each Extra": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Extras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Extras": {
+      "main": [
+        [
+          {
+            "node": "Format Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empty Extras": {
+      "main": [
+        [
+          {
+            "node": "Format Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Payload": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "main": [
+        [
+          {
+            "node": "Parse Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Output": {
+      "main": [
+        [
+          {
+            "node": "Save Field",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Note": {
+      "main": [
+        [
+          {
+            "node": "Add Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "HQGrY3cUDvQJLGMZ",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

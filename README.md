@@ -2,7 +2,7 @@
 
 Workflow n8n que recebe `lead_id` Kommo, gera roteiro de **contorno de objeção** via LLM (gpt-4o) e devolve em 2 destinos no lead:
 
-- Custom field `Resp. IA objeção` (`field_id: 1378355`) ← só o roteiro copiável
+- Custom field `Resp. IA objeção` (`field_id: 1378497`) ← só o roteiro copiável
 - Nota no lead ← 3 seções (`ROTEIRO COPIÁVEL` + `POR QUE FUNCIONA` + `PRÓXIMO PASSO`)
 
 > Snapshot exportado do monorepo interno **Urânia Labs · n8n-workflows** em **2026-05-21**. Brainstorm fechado, workflow ainda não criado.
@@ -42,7 +42,7 @@ Workflow n8n que recebe `lead_id` Kommo, gera roteiro de **contorno de objeção
    - Contrato JSON do output do LLM
    - Código JS dos nodes `Format Payload`, `Build Note`, `Validate Input`
    - Payloads de chamada dos 3 MS-KOMMO
-   - Pendências de setup (field_id de `Nº de alunos`, suporte a `\n` no field 1378355)
+   - Pendências de setup (field_id de `Nº de alunos`, suporte a `\n` no field 1378497)
 2. **Escrever `SYSTEM_PROMPT.md` v0.1** baseado em:
    - Persona + posicionamento Urânia
    - 6 Estruturas (Humana, Tecnológica, Digital, Internacional, Científica, Pedagógica) — mapeamento perfil → estruturas
@@ -137,7 +137,7 @@ Você vai usar **Claude Code** (CLI) com o servidor MCP `n8n` configurado. Os co
 | `mcp__n8n__search_nodes` | Busca tipos de node disponíveis (raro precisar — briefing labs já tem todos). |
 
 **Dica:** quando pedir pro Claude Code criar este workflow, dê contexto explícito:
-> "Lê DESIGN.md, FIELDS.md e os 2 `.workflow-build.js` em `_refs/`. Cria o `.workflow-build.js` deste agente clonando o briefing labs (`_refs/n8n-briefing-leads-kommo-labs/.workflow-build.js`) e adicionando o ramo Save Field do qualificador (`_refs/n8n-qualificador-leads-kommo/.workflow-build.js`). Diffs: whitelist é só 5 campos (ver FIELDS.md), LLM com JSON mode, ramo Save Field aponta pro field 1378355."
+> "Lê DESIGN.md, FIELDS.md e os 2 `.workflow-build.js` em `_refs/`. Cria o `.workflow-build.js` deste agente clonando o briefing labs (`_refs/n8n-briefing-leads-kommo-labs/.workflow-build.js`) e adicionando o ramo Save Field do qualificador (`_refs/n8n-qualificador-leads-kommo/.workflow-build.js`). Diffs: whitelist é só 5 campos (ver FIELDS.md), LLM com JSON mode, ramo Save Field aponta pro field 1378497."
 
 ### Roteiro sugerido de implementação
 
@@ -146,7 +146,7 @@ Não construa tudo de uma vez. Faça em **4 etapas**, cada uma com checkpoint de
 1. **Setup** — lê este README, depois `DESIGN.md`, `FIELDS.md` e os 2 `.workflow-build.js` de `_refs/`. Resolve as pendências em `DESIGN.md` §3.7.
 2. **Esqueleto E (Extract)** — só a parte que lê o lead do Kommo. Testa com `{lead_id}` real e confirma que volta o JSON esperado antes de seguir.
 3. **Transform + LLM** — whitelist dos 5 campos + chamada gpt-4o JSON mode. Escreve `SYSTEM_PROMPT.md` v0.1. Confirma o JSON de saída na aba Executions do n8n.
-4. **Load (saída dupla)** — ramo `Save Field` (field 1378355) em paralelo com `Add Note` (nota 3 seções). Confirma no card Kommo de um lead real.
+4. **Load (saída dupla)** — ramo `Save Field` (field 1378497) em paralelo com `Add Note` (nota 3 seções). Confirma no card Kommo de um lead real.
 
 Depois disso entra a **calibração** (loop de 1-2 semanas): dispara em 5-10 leads, sample manual, itera `systemPrompt` v0.1 → v0.N direto na UI do n8n.
 
@@ -201,6 +201,6 @@ Refs marcadas "(monorepo)" **sem snapshot** apontam pra coisas não-bloqueantes 
 | **Kommo tenant** | `https://uraniaplanetario.kommo.com/api/v4/...` |
 | **Bearer Kommo (httpBearerAuth)** | `skV2BHNge0lsu6UO` (compartilhada · expira 31/12/2026 · não criar nova) |
 | **Error workflow padrão** | `HQGrY3cUDvQJLGMZ` |
-| **Credencial OpenAI** | `OpenAi ([N8N-Q] Agentes SDR)` (compartilhada com briefing + qualifier) |
+| **Credencial OpenAI** | `OpenAi ([N8N-Q] Agentes Geral)` (compartilhada com briefing + qualifier) |
 
 Detalhes em [`CLAUDE.md`](./CLAUDE.md) seção "Linhas vermelhas".

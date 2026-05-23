@@ -15,9 +15,9 @@
 | 1 | **Trigger:** salesbot manual no Kommo | Automation nativa em campo/stage; híbrido | Controle do vendedor; permite re-disparo intencional (cliente trouxe objeção nova); evita N webhooks por save (sintoma observado lead 28416666 em 2026-05-06) |
 | 2 | **Granularidade do output:** 1 nota canal-agnóstica | Multi-canal (WhatsApp/call/material direção); modo curto/completo via flag | YAGNI — vendedor adapta roteiro ao canal; flag complica salesbot sem evidência de necessidade |
 | 3 | **Arquitetura:** clone do briefing labs + 1 ramo Save Field do qualifier (~14 nodes) | Solo do zero; outro pattern | Reuso máximo de pattern provado (briefing `fk1ikmDHRYmIUOsD`); ramo Save Field replica solução do qualifier (`zkwKMK2GebcivhGU`) |
-| 4 | **Modelo LLM:** gpt-4o com credencial `OpenAi ([N8N-Q] Agentes SDR)` existente | Claude Sonnet 4.6 + prompt caching; gpt-4o-mini | Padrão da casa; credencial pronta (0 setup); migração pra Claude diferida pós-calibração quando ganho de cache em volume justificar overhead de nova credencial Anthropic |
+| 4 | **Modelo LLM:** gpt-4o com credencial `OpenAi ([N8N-Q] Agentes Geral)` existente | Claude Sonnet 4.6 + prompt caching; gpt-4o-mini | Padrão da casa; credencial pronta (0 setup); migração pra Claude diferida pós-calibração quando ganho de cache em volume justificar overhead de nova credencial Anthropic |
 | 5 | **Input do webhook:** só `{lead_id}` | `{lead_id, context_extra}` com trecho colado; ler última nota automaticamente | Salesbot Kommo é botão; passar texto livre via salesbot é fricção; campo `Objeções (livre)` já cobre nuance literal |
-| 6 | **Output em 2 destinos:** custom field 1378355 (`Resp. IA objeção`) ← roteiro / nota Kommo ← 3 seções | Só nota; só field | Field = ação rápida visível no card; nota = histórico+contexto auditável |
+| 6 | **Output em 2 destinos:** custom field 1378497 (`Resp. IA objeção`) ← roteiro / nota Kommo ← 3 seções | Só nota; só field | Field = ação rápida visível no card; nota = histórico+contexto auditável |
 | 7 | **Formato da nota:** 3 seções — `ROTEIRO COPIÁVEL` + `POR QUE FUNCIONA` + `PRÓXIMO PASSO` | 6 seções do briefing original; inverter ordem mantendo 6; 2 modos via flag | Action-first (vendedor com pressa raspa o topo); júnior ainda lê o porquê embaixo; menos token |
 | 8 | **Idempotência:** field sobrescreve, notas acumulam | Dedupe por hash em janela temporal | Padrão qualifier; histórico fica nas notas (auditável); último roteiro vale no field |
 | 9 | **Formato de saída do LLM:** JSON mode com 3 campos crus, code monta nota com headers fixos | Texto único com delimitadores; JSON com `nota_completa` pré-montada (duplica roteiro) | Menos tokens (sem duplicação, sem markers); headers `ROTEIRO COPIÁVEL` etc. ficam versionados em código JS (mudar layout não exige re-calibrar prompt); padrão JSON mode já provado no qualifier |
@@ -29,8 +29,8 @@
 
 ## 2. Assumptions
 
-1. **Custom field 1378355 (`Resp. IA objeção`) existe no Kommo** e aceita texto longo (~500-1000 chars) sem truncar. Confirmar no setup do workflow.
-2. **Credencial `OpenAi ([N8N-Q] Agentes SDR)` tem quota** suficiente pros 3 consumidores (briefing + qualifier + contorno). MVP volume baixo (~5-10 disparos pra calibração).
+1. **Custom field 1378497 (`Resp. IA objeção`) existe no Kommo** e aceita texto longo (~500-1000 chars) sem truncar. Confirmar no setup do workflow.
+2. **Credencial `OpenAi ([N8N-Q] Agentes Geral)` tem quota** suficiente pros 3 consumidores (briefing + qualifier + contorno). MVP volume baixo (~5-10 disparos pra calibração).
 3. **Volume MVP:** disparos manuais via salesbot; sem batch externo (diferente do qualifier que rodou 3.000 leads).
 4. **Error workflow `HQGrY3cUDvQJLGMZ`** aplicável padrão em `settings.errorWorkflow`.
 5. **Bearer Kommo `skV2BHNge0lsu6UO`** reusado nos 3 MS-KOMMO chamados (Get Entity, Salvar campos, Add note).
@@ -57,9 +57,9 @@
 | 6c | `Aggregate Extras` | `n8n-nodes-base.code` | (branch true) consolida extras. |
 | 6d | `Empty Extras` | `n8n-nodes-base.set` | (branch false) array vazio. |
 | 7 | `Format Payload` | `n8n-nodes-base.code` | Lê `$('System Prompt')`, aplica whitelist de 5 campos, injeta DATA ATUAL, monta `messages` pro LLM. |
-| 8 | `OpenAI Chat` | `@n8n/n8n-nodes-langchain.openAi` | gpt-4o, temp 0.4, `response_format: { type: 'json_object' }`. Credencial `OpenAi ([N8N-Q] Agentes SDR)`. |
+| 8 | `OpenAI Chat` | `@n8n/n8n-nodes-langchain.openAi` | gpt-4o, temp 0.4, `response_format: { type: 'json_object' }`. Credencial `OpenAi ([N8N-Q] Agentes Geral)`. |
 | 9 | `Parse Output` | `n8n-nodes-base.code` | Parseia JSON do LLM em 3 campos. Valida shape mínimo. |
-| 10a | `Save Field` | `n8n-nodes-base.executeWorkflow` | (ramo paralelo) chama MS Salvar campos (`m5K7FZDDvVXDiywo`), field 1378355 ← `roteiro`. |
+| 10a | `Save Field` | `n8n-nodes-base.executeWorkflow` | (ramo paralelo) chama MS Salvar campos (`m5K7FZDDvVXDiywo`), field 1378497 ← `roteiro`. |
 | 10b | `Build Note` | `n8n-nodes-base.code` | (ramo paralelo) monta texto da nota com 3 headers fixos. |
 | 11 | `Add Note` | `n8n-nodes-base.executeWorkflow` | Chama MS Add note (`QYvm2okgK3bQgMbR`), nota completa anexada ao lead. |
 
@@ -85,9 +85,9 @@ LLM chamado com `response_format: { type: 'json_object' }`. Output esperado:
 
 | Campo | Tipo | Tamanho | Conteúdo |
 |---|---|---|---|
-| `roteiro` | string | ~50-200 palavras | 3-5 falas numeradas, texto puro. **É o que vai pro field 1378355** (sobrescreve). Quebras de linha como `\n`. |
+| `roteiro` | string | ~50-200 palavras | 3-5 falas numeradas, texto puro. Quebras de linha como `\n`. **Vai SÓ pra nota** (Destino 2) — não cabe no field 1378497 (limite 256 chars descoberto em 2026-05-23). |
 | `por_que_funciona` | string | ~30-80 palavras | Explica ao vendedor júnior por que essa abordagem foi escolhida (Estrutura ativada + Compromisso aplicado + tom). |
-| `proximo_passo` | string | ~10-30 palavras | Ação concreta com data sugerida (não placeholder `[dia]`). |
+| `proximo_passo` | string | ~10-30 palavras | Ação concreta com data sugerida (não placeholder `[dia]`). **É o que vai pro field 1378497** (Destino 1, sobrescreve) — escolhido em 2026-05-23 porque cabe nos 256 chars do field. |
 
 🎓 **Conceito-chave:** JSON mode garante shape do output, **não** garante conteúdo. O prompt em `SYSTEM_PROMPT.md` é quem força "100% PT-BR, sem markdown, sem placeholder, sem desconto solto, etc.". Se LLM retornar JSON válido mas com texto ruim, ajusta o **prompt**, não o schema.
 
@@ -159,6 +159,8 @@ return { note_text: texto }
 
 🎓 **Conceito-chave:** headers em **string fixa** no JS (não no LLM). Se um dia quiser mudar `ROTEIRO COPIÁVEL` pra `ROTEIRO`, edita aqui — sem re-calibrar o prompt. **Separação de responsabilidades:** LLM gera conteúdo, código gera estrutura.
 
+🎓 **Conceito-chave 2 (multiline):** notas do Kommo **aceitam `\n` real** — então aqui o `roteiro` vai com quebras de linha naturais preservadas (3-5 falas em linhas separadas, legível). É **diferente** do `Save Field` para o field 1378497, que é single-line e exige `roteiro.replace(/\n+/g, ' · ')`. Confirmado 2026-05-22.
+
 **Ref:** o briefing labs **não tem `Build Note`** — ele monta a nota toda no LLM. Aqui mudamos porque a saída dupla (field + nota) exige que `roteiro` venha separado, então a nota precisa ser montada por código depois.
 
 ---
@@ -193,7 +195,7 @@ São contratos **rígidos** — os MS esperam shapes específicos. Veja `_refs/n
     "entity_type": "leads",
     "entity_id": "{{ $('Validate Input').first().json.lead_id }}",
     "fields": [
-      { "field_id": 1378355, "value": "{{ $('Parse Output').first().json.roteiro }}" }
+      { "field_id": 1378497, "value": "{{ $('Parse Output').first().json.roteiro }}" }
     ]
   }
 }
@@ -209,8 +211,7 @@ São contratos **rígidos** — os MS esperam shapes específicos. Veja `_refs/n
   "body": {
     "entity_type": "leads",
     "entity_id": "{{ $('Validate Input').first().json.lead_id }}",
-    "note_type": "service_message",
-    "service": "Agente Contorno Objeção",
+    "note_type": "common",
     "text": "{{ $('Build Note').first().json.note_text }}"
   }
 }
@@ -253,10 +254,10 @@ throw new Error('lead_id ausente — body recebido: ' + JSON.stringify(body))
 
 Resolva antes ou logo no início da implementação. Não bloqueia escrever o `SYSTEM_PROMPT.md`, mas bloqueia subir o workflow.
 
-- [ ] **`field_id` exato de `Nº de alunos`** — não está catalogado em [`_refs/n8n-ms-kommo/kommo-fields.md`](./_refs/n8n-ms-kommo/kommo-fields.md) · monorepo: `../n8n-ms-kommo/kommo-fields.md`. **Como resolver:** chama Kommo API `GET /api/v4/leads/custom_fields` (autenticado com Bearer `skV2BHNge0lsu6UO`) e procura o campo. Atualiza `FIELDS.md` quando achar.
-- [ ] **Custom field `Cargo` em contacts** — `field_id: 904188` já está catalogado. **Confirmar:** como ele aparece no payload `_embedded.contacts[0].custom_fields_values`? Pega 1 lead com contato cadastrado e inspeciona via `Get Lead` direto (executeWorkflow do MS isolado). Documenta o path exato pra usar no `Format Payload`.
-- [ ] **Custom field 1378355 — suporte a quebras de linha (`\n`)** — Kommo field text aceita multilinha em **alguns** lugares e single-line em outros. **Como testar:** chama MS Salvar campos com texto contendo `\n`. Confere no card Kommo se renderiza com quebra de linha ou se vira espaço. Se virar espaço → adapta `roteiro` pra usar separadores tipo ` · ` em vez de `\n`.
-- [ ] **Credencial OpenAI no node `OpenAI Chat`** — não vem auto-atribuída quando você cria workflow via MCP. Após criar, vai na UI do n8n no node, seleciona `OpenAi ([N8N-Q] Agentes SDR)`.
+- [x] **`field_id` exato de `Nº de alunos`** — **resolvido 2026-05-22 via MS Get Entity em lead 29314611:** `field_id: 849729`, `field_type: text` (string, não numeric — apesar do nome do campo). FIELDS.md atualizado.
+- [x] **Custom field `Cargo` em contacts** — **resolvido 2026-05-22 via MS Get Entity em contact 36394425:** `field_id: 904188` (bate com catálogo), `field_type: "select"` (enum — valor exemplo: "Diretor", enum_id 620322). **Descoberta arquitetural:** `_embedded.contacts` do Get Lead retorna só `{id, is_main}` — o Cargo exige 2º Get Entity em `entity: contacts`. O ramo `IF Has Extras + Plan Fetches + Get Each Extra` do briefing labs já resolve isso — manter conforme está. Path no `Aggregate Extras`: `extras.contacts.find(c => c.is_main).custom_fields_values.find(f => f.field_name === "Cargo").values[0].value`.
+- [x] **Custom field 1378497 — suporte a quebras de linha (`\n`)** — **resolvido 2026-05-22 via teste manual na UI do Kommo (lead 29314611):** field é **single-line**, `\n` vira espaço no rendering. **Adaptação:** LLM continua devolvendo `roteiro` com `\n` natural; no `Save Field` aplicar `roteiro.replace(/\n+/g, ' · ')` antes de mandar pro MS. Na nota (`Build Note`) usar `roteiro` direto sem transformação — notas suportam multiline. Marcos limpa o campo manualmente no Kommo após o teste.
+- [ ] **Credencial OpenAI no node `OpenAI Chat`** — não vem auto-atribuída quando você cria workflow via MCP. Após criar, vai na UI do n8n no node, seleciona `OpenAi ([N8N-Q] Agentes Geral)`.
 - [ ] **Error workflow `HQGrY3cUDvQJLGMZ`** — setar em `settings.errorWorkflow` ao criar o workflow.
 - [ ] **Salesbot no Kommo** — não é setup do workflow, mas é o trigger. Após o workflow estar ativo, criar salesbot manual no Kommo que dispara webhook `POST /webhook/contorno-objecao-kommo` com `lead_id`. Configuração na UI do Kommo, não no n8n.
 
