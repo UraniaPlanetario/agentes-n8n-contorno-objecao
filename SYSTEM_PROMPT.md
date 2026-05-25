@@ -2,7 +2,7 @@
 
 > Prompt do node `System Prompt` (Set) no workflow `[KOMMO] Agente Contorno Objeção` (`AhnbRqc4wKX7UyHB`). Versionado aqui pra iterar com base em outputs reais.
 
-**Versão atual:** **v0.7** (deployada 2026-05-23 — migração field 1378355 → 1378497 texto longo + Opção C no field).
+**Versão atual:** **v0.8** (deployada 2026-05-25 — concisão do roteiro + cabeçalho com objeções setadas no disparo).
 
 **Onde mora no n8n:** node **`System Prompt`** (tipo Set, entre Webhook e Validate Input) do workflow `AhnbRqc4wKX7UyHB`. Campo `systemPrompt`. Editável direto na UI.
 
@@ -141,7 +141,9 @@ ABAIXO segue o MAPEAMENTO DE OBJEÇÕES Urânia (16 objeções canônicas, conca
 
 | v0.6 / v0.6.1 / v0.6.2 | 2026-05-23 | Substituída por v0.7 — migração field arquitetural | **Branch defensivo arquitetural** (não muda system prompt — muda workflow). Adicionado: (1) IF "Objeção Válida?" após Format Payload; (2) Build Orientation Note no branch false; (3) Format Payload detecta `ehObjecaoValida` (filtra N/A). Quando vendedor dispara sem preencher Objeções (campo só com N/A ou vazio), agente NÃO chama OpenAI nem gera roteiro — cria nota orientando o vendedor a corrigir. Esclarecimento: o campo Objeções no Kommo tem **15 objeções estratégicas + 1 placeholder "N/A"** (não 16 como docs antigos diziam). Workflow agora tem 17 nodes. Regressão: 5/5 leads continuam funcionando idênticos no caminho válido. |
 
-| **v0.7 (ATIVA)** | **2026-05-23** | **DEPLOYADA** | **Migração arquitetural de field** (não muda system prompt). Marcos descobriu que `Resp. IA objeção` (id antigo 1378355) foi criado como texto curto no Kommo (limite 256 chars). Solução determinística: criou novo field `1378497` como texto longo, migrou Parse Output pra apontar pra ele, e agora o agente grava **Opção C** (Roteiro completo + Próximo Passo) — mais útil que só `proximo_passo`. Vendedor abre o card e vê o roteiro inteiro direto no field, sem precisar abrir a nota. O `por_que_funciona` (campo meta) continua só na nota. Test no lead 29011758 validou: 970 chars gravados no field, Save Field em 437ms, todos os outros comportamentos preservados (citação livre, faixa qualitativa, cálculo cru). RESTORE_POINT.md gravado antes da mudança (preservado como histórico). |
+| v0.7 | 2026-05-23 | Substituída por v0.8 — validada em 1 disparo real (lead 28339472, RH Empresas, obj #4) | **Migração arquitetural de field** (não muda system prompt). Marcos descobriu que `Resp. IA objeção` (id antigo 1378355) foi criado como texto curto no Kommo (limite 256 chars). Solução determinística: criou novo field `1378497` como texto longo, migrou Parse Output pra apontar pra ele, e agora o agente grava **Opção C** (Roteiro completo + Próximo Passo) — mais útil que só `proximo_passo`. Vendedor abre o card e vê o roteiro inteiro direto no field, sem precisar abrir a nota. O `por_que_funciona` (campo meta) continua só na nota. Test no lead 29011758 validou: 970 chars gravados no field, Save Field em 437ms, todos os outros comportamentos preservados (citação livre, faixa qualitativa, cálculo cru). RESTORE_POINT.md gravado antes da mudança (preservado como histórico). |
+
+| **v0.8 (ATIVA)** | **2026-05-25** | **DEPLOYADA** | **Concisão + Auditoria.** 2 mudanças baseadas em observação real: (1) Regra do roteiro endurecida — cada fala MÁXIMO 35 palavras (média 15-25), total 80-150 palavras, com exemplo ❌/✅. Resultado: ~50% menos texto no roteiro. (2) Build Note ganhou cabeçalho **"OBJEÇÕES SETADAS NO DISPARO"** no topo — snapshot literal das objeções marcadas no campo no momento do disparo (incluindo N/A — opção A), via novo campo `objecoesSetadas` exposto pelo Format Payload. Pra auditoria caso campo seja editado depois. Validado: lead 23209120 v0.8 (#1 CARO) — roteiro 71 palavras (era ~140 em v0.7), cabeçalho aparece, nenhuma regressão. RESTORE_POINT.md atualizado pra rollback v0.8 → v0.7 se necessário. |
 
 ## Calibração — como iterar de v0.1 → v0.N
 

@@ -1,56 +1,86 @@
-# RESTORE POINT — 2026-05-23 (antes da migração field 1378355 → 1378497)
-
-> **✅ MIGRAÇÃO CONCLUÍDA com sucesso em 2026-05-23.** O field `1378355` foi deletado no Kommo, o `1378497` foi renomeado pra "Resp. IA objeção". Teste validou que o agente grava Roteiro + Próximo Passo (Opção C) no novo field texto longo. Este RESTORE_POINT fica como histórico — não é mais necessário reverter.
+# RESTORE POINT — 2026-05-25 (antes da v0.8: concisão + cabeçalho de objeções)
 
 ## Contexto
 
-Marcos descobriu que o field `Resp. IA objeção` (1378355) foi criado como **texto curto** (limite 256 chars) em vez de texto longo. Criou um novo field `1378497` como **texto longo** e quer migrar pra ele, gravando **Opção C** (Roteiro + Próximo Passo) em vez de só o `proximo_passo`.
+Marcos pediu 2 mudanças observadas após primeiro disparo real:
+1. **Roteiro mais conciso** — limitar palavras por fala pra evitar prolixidade
+2. **Cabeçalho com objeções setadas no topo da nota** — pra auditoria se vendedor editar o campo depois
 
-## Estado ANTES da migração (snapshot a reverter se necessário)
+## Estado ANTES da v0.8 (snapshot pra reverter se necessário)
 
 ### Workflow
 - **ID:** `AhnbRqc4wKX7UyHB`
-- **Status:** ATIVO
-- **Versão:** v0.6.2
+- **Versão prévia:** v0.7 (field 1378497 já em uso, Build Note já DUAL)
+- **Disparo real validado em v0.7:** execution 258319, lead 28339472 (RH Empresas, objeção #4)
 
-### Parse Output (jsCode — trecho relevante)
+### Regras do prompt (antes v0.8)
 
+System Prompt — seção REGRAS DE SAÍDA — JSON OBRIGATÓRIO:
+
+```
+- "roteiro": 3 a 5 falas numeradas separadas por \n. Cada fala em 1 linha. ~50 a 200 palavras totais. Tom falado.
+```
+
+### Format Payload (jsCode antes v0.8 — não tinha `objecoesSetadas` no return)
+
+Return era:
 ```javascript
-const leadId = $('Format Payload').first().json.leadId;
-// Field 1378355 tem limite 256 chars (descoberto 2026-05-23) — usar proximo_passo curto
-
 return [{ json: {
-  entity_id: leadId,
-  entity_type: 'leads',
-  save: [{ field_id: 1378355, value: proximo }],
-  roteiro: roteiro,
-  por_que_funciona: porQue,
-  proximo_passo: proximo,
-  leadId: leadId
+  systemPrompt: SYSTEM_PROMPT,
+  userPrompt: userPrompt,
+  leadId: lead.id,
+  ehObjecaoValida: ehObjecaoValida
 } }];
 ```
 
-### Fields Kommo
-- `1378355` **Resp. IA objeção** — texto curto, em uso pelo agente, recebendo apenas o `proximo_passo`
-- `1378497` **Resp. IA objeção (novo)** — texto longo, **criado mas ainda vazio**
+### Build Note (jsCode antes v0.8 — sem cabeçalho de objeções)
 
-## Como reverter (se a mudança der erro)
+```javascript
+const p = $('Parse Output').first().json;
 
-1. Aplicar `updateNode` no `Parse Output` (workflow `AhnbRqc4wKX7UyHB`) com o jsCode anterior (acima).
-2. Marcos: opcional — deletar o field `1378497` no Kommo (ou manter pra próxima tentativa).
-3. Notificar e fechar o ciclo.
+const texto = 'Agente Contorno Objeção\n\n' +
+              'ROTEIRO COPIÁVEL\n' + p.roteiro + '\n\n' +
+              'POR QUE FUNCIONA\n' + p.por_que_funciona + '\n\n' +
+              'PRÓXIMO PASSO\n' + p.proximo_passo;
+// (sem bloco OBJEÇÕES SETADAS NO DISPARO)
+
+return [
+  { json: { ..., note_type: 'common', text: texto }},
+  { json: { ..., note_type: 'service_message', service: 'Agente Contorno Objeção', text: texto }}
+];
+```
+
+### Build Orientation Note — mesma estrutura, sem cabeçalho de objeções
+
+## Como reverter v0.8 → v0.7
+
+### Opção 1 — Via Git (recomendada)
+
+```bash
+# Localizar o commit imediatamente anterior à v0.8 (commit do v0.7)
+git log --oneline | head -5
+
+# Ver o estado dos arquivos no commit antigo
+git show <hash-do-commit-v0.7>:.workflow-build.js > /tmp/build-v0.7.js
+
+# Re-aplicar jsCode antigo via MCP n8n_update_partial_workflow
+# (não dá pra fazer git checkout direto pq o n8n live tá descasado do .workflow-build.js)
+```
+
+### Opção 2 — Re-aplicar manualmente via MCP
+
+Pra cada um dos 4 nodes, mandar `updateNode` com o jsCode/value antigo:
+1. **System Prompt** (Set): patchNodeField revertendo o trecho da regra do roteiro
+2. **Format Payload** (Code): updateNode com jsCode sem `objecoesSetadas`
+3. **Build Note** (Code): updateNode com jsCode sem o bloco "OBJEÇÕES SETADAS NO DISPARO"
+4. **Build Orientation Note** (Code): idem
+
+O conteúdo exato dos 3 jsCode v0.7 está no `.workflow-build.js` do commit `53cdf05` (use `git show 53cdf05:.workflow-build.js`).
 
 ## Como aplicar a reversão via MCP
 
-```javascript
-mcp__n8n-mcp__n8n_update_partial_workflow({
-  id: 'AhnbRqc4wKX7UyHB',
-  operations: [{
-    type: 'updateNode',
-    nodeName: 'Parse Output',
-    updates: { parameters: { jsCode: '<código v0.6.2 acima>' } }
-  }]
-})
-```
+Disparar `mcp__n8n-mcp__n8n_update_partial_workflow` com 4 operations (1 patchNodeField no System Prompt + 3 updateNode nos Code nodes), passando os jsCode antigos extraídos do Git.
 
-(O jsCode completo está versionado em `.workflow-build.js` antes desta migração — mas só a const `PARSE_OUTPUT_CODE`.)
+## Histórico de RESTORE_POINTs anteriores
+
+- **2026-05-23** — migração field `1378355` → `1378497` (texto curto → texto longo). ✅ Concluída com sucesso. Conteúdo arquivado no commit `53cdf05`.

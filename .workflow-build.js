@@ -347,10 +347,19 @@ if (main) {
 
 const userPrompt = lines.join('\\n');
 
+// v0.6: detecta objeção inválida (só N/A ou vazio) pra branch defensivo
+// v0.8 (2026-05-25): expõe objecoesSetadas pro Build Note renderizar no cabeçalho da nota (auditoria)
+const objecoesLead = (present['Objeções'] || '').split(', ').map(function(s){return s.trim();}).filter(function(s){return s.length > 0;});
+const objecoesReais = objecoesLead.filter(function(s){return s !== 'N/A';});
+const ehObjecaoValida = objecoesReais.length > 0;
+const objecoesSetadas = objecoesLead.length > 0 ? objecoesLead.join(', ') : '(nenhuma)';
+
 return [{ json: {
   systemPrompt: SYSTEM_PROMPT,
   userPrompt: userPrompt,
-  leadId: lead.id
+  leadId: lead.id,
+  ehObjecaoValida: ehObjecaoValida,
+  objecoesSetadas: objecoesSetadas
 } }];`;
 
 const PARSE_OUTPUT_CODE = `// NOVO node (briefing não tem). Valida JSON do LLM, separa roteiro inline vs multiline.
@@ -393,8 +402,8 @@ return [{ json: {
   leadId: leadId
 } }];`;
 
-const BUILD_NOTE_CODE = `// ADAPTADO vs briefing labs: monta 3 seções fixas em vez de usar content cru do LLM.
-// Roteiro vai multiline (notas Kommo aceitam \\n natural).
+const BUILD_NOTE_CODE = `// v0.8 (2026-05-25): adiciona cabeçalho com "OBJEÇÕES SETADAS NO DISPARO" pra auditoria.
+//   Snapshot vem do Format Payload (incluindo N/A se marcado — opção A).
 // v0.6.2: cria 2 registros no Kommo — Nota (common) + Msg interna (service_message).
 //   Marcos quer ambos: Nota pro histórico + msg interna pro fluxo de conversa.
 //   Add Note (executeWorkflow mode each) itera os 2 items e cria 2 chamadas ao MS.
