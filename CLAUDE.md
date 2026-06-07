@@ -18,9 +18,9 @@ Coach de objeção pra vendedor comercial Urânia. Dispara via **salesbot manual
 
 | Campo | Valor |
 |---|---|
-| **Status** | Spec fechado (2026-05-21). Workflow ainda não criado. |
+| **Status** | **Em produção (v0.18)** — ativo desde 2026-05-23. Plugado no Hub em 2026-06-07 (`public.tools` + `public.agents` + telemetria via `tools.exports`). |
 | **Padrão arquitetural** | E (ETL+LLM one-shot) — clone do briefing labs + 1 ramo Save Field do qualifier |
-| **Próxima ação** | Criar workflow no n8n via MCP + escrever `SYSTEM_PROMPT.md` v0.1 |
+| **Última ação** | 2026-06-07: integração com Hub — registro em `public.agents` (id 33) + `public.tools` (id 13) + node `Record Tool Usage` no workflow + página React `/ferramentas/contorno-objecao-kommo`. |
 
 ---
 
@@ -41,16 +41,20 @@ Coach de objeção pra vendedor comercial Urânia. Dispara via **salesbot manual
 
 ---
 
-## Pipeline (~14 nodes)
+## Pipeline (18 nodes)
 
 ```
 Webhook (onReceived) → System Prompt (Set, editável UI) → Validate Input
   → Get Lead [MS pSUCb5GTYWc4B99I] → IF Has Extras → Plan/Get/Aggregate ou Empty
-  → Format Payload (lê $('System Prompt') + injeta DATA ATUAL) → OpenAI Chat (JSON mode)
-  → Parse Output (separa roteiro vs nota completa) →
-       ├─→ Save Field [MS m5K7FZDDvVXDiywo] (field 1378497 ← roteiro)
-       └─→ Build Note → Add Note [MS QYvm2okgK3bQgMbR] (nota ← 3 seções)
+  → Format Payload (lê $('System Prompt') + injeta DATA ATUAL) → IF Objeção Válida?
+       ├─ false → Build Orientation Note → Add Note
+       └─ true  → OpenAI Chat1 (JSON mode) →
+                    ├─→ Parse Output → Save Field [MS m5K7FZDDvVXDiywo] (field 1378497)
+                    │                 → Build Note → Add Note [MS QYvm2okgK3bQgMbR]
+                    └─→ Record Tool Usage (fire-and-forget) → tools.exports no hub
 ```
+
+> **Record Tool Usage** (adicionado 2026-06-07): ramo paralelo do `OpenAI Chat1`, faz POST pra edge function `record-tool-usage` do hub Supabase com `{tool_slug, kommo_lead_id, kommo_responsible_user_id, input_data, output_metadata}`. `output_metadata` inclui `cost_usd`, `tokens_in/out`, `duration_ms`, `model_used`, `system_prompt_version`, `agent_id=33`. Aciona com `onError: continueRegularOutput` — se hub estiver fora, fluxo principal não cai.
 
 Detalhes técnicos exatos (pipeline node a node, contrato JSON do LLM, pseudocódigo dos 3 nodes Code, payloads dos 3 MS, pendências de setup) → ver [`DESIGN.md`](./DESIGN.md) §3.
 
@@ -115,11 +119,32 @@ Raphael edita o `systemPrompt` no node Set `System Prompt` **direto pela UI do n
 
 ---
 
-## Pós-MVP (deferido)
+## Plugagem no Hub Urânia (2026-06-07)
 
-- **Plugagem Hub** — registrar em `public.agents` após calibração estável (slug `contorno-objecao-kommo`).
-- **Métricas de sucesso** — sample manual + pesquisa interna com vendedores + conversão de stage no Kommo.
+Implementado em 1 sessão após estabilização do prompt em v0.18:
+
+| Local | O que foi feito |
+|---|---|
+| `public.agents` | INSERT id=33, slug `contorno-objecao-kommo`, runner_type=classifier, model=gpt-4o, temperature=0.4, platform_id=9 (n8n Queue Mode), config aponta pro workflow + system_prompt em n8n (fonte de verdade). |
+| `public.tools` | INSERT id=13, slug `contorno-objecao-kommo`, category=comercial, sort_order=12, icon `MessageSquareWarning`, config com `n8n_workflow_id`, `agent_id_in_public_agents=33`, `trigger=salesbot_manual`. |
+| Edge function `record-tool-usage` | Endpoint genérico (`/functions/v1/record-tool-usage`) — recebe POST n8n, resolve `kommo_responsible_user_id` → `user_id` via `public.users`, insere em `tools.exports` com `output_metadata` contendo cost+tokens+duration. **Reaproveitável** por qualquer agente classifier n8n-driven futuro. |
+| n8n workflow | Adicionado node `Record Tool Usage` (HTTP Request, ramo paralelo do `OpenAI Chat1`, fire-and-forget). Cost calculado inline (gpt-4o: in 2.5/1M, out 10/1M). |
+| Hub React | `src/tools/contorno-objecao-kommo/ContornoObjecaoKommo.tsx` (3 abas: Sobre / Execuções / Métricas). Registrado em `src/tools/registry.ts`. Rota `/ferramentas/contorno-objecao-kommo` aparece automaticamente via roteamento dinâmico `:slug`. |
+| Edge function `record-agent-metric` | **Deployada mas não-chamada** — primeira tentativa de telemetria (escrevia em `chat.usage_metrics` igual SIRIUS). Substituída pelo padrão `tools.exports` por alinhamento com `urania-hub/docs/custos-finops.md`. Mantida deployed por enquanto (sem chamadas, custo zero); decidir deletar depois. |
+
+**Padrão estabelecido:** este agente é o **piloto da observabilidade de classifier no hub**. Os outros 25 classifiers (Cortex, Sugestor, Blog, etc.) não emitem telemetria. Replicar o padrão `Record Tool Usage` neles é trabalho futuro.
+
+### Como ver as métricas no hub
+- Rota: `/ferramentas/contorno-objecao-kommo` → aba "Métricas"
+- Componente: `<ToolMetricsTab toolSlug="contorno-objecao-kommo" />` filtra `tools.exports` por slug
+- Aparece: total de disparos, taxa de sucesso, duração média, ranking de vendedores que mais usaram (resolvido via `kommo_responsible_user_id` → `public.users.kommo_user_id`)
+- Cost: visível em `output_metadata.cost_usd` (acessível via SQL — dashboard FinOps pode agregar)
+
+## Pós-MVP (ainda deferido)
+
+- **Métricas de qualidade** — sample manual + pesquisa interna com vendedores + conversão de stage no Kommo (quantitativa, não automatizável pelo hub).
 - **Stub canônico** — criar `ferramenta-contorno-objecao.md` no repositório de soluções canônicas tech-labs (monorepo Urânia · padrão briefing/qualifier).
+- **Replicar telemetria pros outros 25 classifiers** — usando o mesmo padrão `record-tool-usage` (genérico, basta passar `tool_slug` diferente em cada workflow).
 
 Detalhe → [`DESIGN.md`](./DESIGN.md) §4.
 
@@ -156,5 +181,5 @@ Detalhe → [`DESIGN.md`](./DESIGN.md) §4.
 
 - Padrão arquitetural E + família+variantes: `../../tech-labs/ecossistema-tech-labs-canonico/base/padroes-de-agente.md`
 - Agente Dor (réplica futura): `../n8n-ativacao-dor-kommo/`
-- SIRIUS CONDUZ (família diferente, conversacional): `../n8n-sirius-conduz/`
+- SIRIUS Especialista CONDUZ (família diferente, conversacional A+B+C): `../../urania-hub/docs/sirius.md`
 - Regras herdadas da casa (Bearer Kommo, error workflow padrão): `../CLAUDE.md`
