@@ -35,7 +35,7 @@ Coach de objeção pra vendedor comercial Urânia. Dispara via **salesbot manual
 | **responseMode** | `onReceived` (fire-and-forget — Kommo timeouta em 2s) |
 | **Body esperado** | `{ "lead_id": <number> }` ou payload nativo Kommo `leads[add\|update\|status][0][id]` |
 | **Modelo IA** | gpt-4o (temp 0.4, max_tokens ~1500-2000, JSON mode) |
-| **Credencial OpenAI** | `OpenAi ([N8N-Q] Agentes Geral)` (compartilhada — briefing + qualifier + este) |
+| **Credencial OpenAI** | `n8n-kommo-conta-contato@urania` (`3p67hRvZclz7v4NF`) — trocada 2026-06-07 (antes: `OpenAi ([N8N-Q] Agentes Geral)` / `AJnAAldqTmp3tWXt`). |
 | **Error workflow** | `HQGrY3cUDvQJLGMZ` |
 | **Onde mora o prompt** | Node Set `System Prompt`, campo `systemPrompt` — editável direto na UI do n8n |
 

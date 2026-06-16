@@ -24,6 +24,7 @@ Detalhes da versão e validação: ver `SYSTEM_PROMPT.md` (histórico de iteraç
 - **2026-05-26** — v0.15 → v0.16 (anti-cópia reforçada #6, validação em 4 leads reais com cópia 100% — fala 3 melhorou parcial, fala 2 cópia deslocada). ✅ Concluída.
 - **2026-05-26** — v0.16 → v0.17 (uso ativo de `Objeções (livre)` — bug descoberto em lead 28231916 SME, validado no mesmo lead pós-patch). ✅ Concluída.
 - **2026-05-26** — v0.17 → v0.18 (inferência enum-vazio + livre-preenchido — bug descoberto em lead 29479931 Nelson, Format Payload + Prompt patcheados, validado no mesmo lead pós-patch). ✅ Concluída.
+- **2026-06-07** — Plugagem com Hub Urânia + troca de credencial OpenAI (sem revisão do prompt). Workflow passou de 17 → 18 nodes com a adição de `Record Tool Usage` (HTTP fire-and-forget pra edge function `record-tool-usage` do Supabase Hub, registrando custo/tokens/duração em `tools.exports`). Credencial OpenAI trocada de `OpenAi ([N8N-Q] Agentes Geral)` (`AJnAAldqTmp3tWXt`) → `n8n-kommo-conta-contato@urania` (`3p67hRvZclz7v4NF`). Edição feita direto na UI pelo Raphael; descoberta no health check 2026-06-16 e sincronizada nos docs nesta data. ⚠️ `system_prompt_version` no body do Record Tool Usage é hardcoded `'v0.18'` — atualizar ao subir v0.19+. ✅ Concluída.
 
 ## Como reverter qualquer versão via Git
 
